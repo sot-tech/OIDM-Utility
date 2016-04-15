@@ -47,7 +47,6 @@ import oracle.iam.platform.authopss.vo.EntityPublication;
 import oracle.iam.platform.authz.exception.AccessDeniedException;
 import oracle.iam.platform.entitymgr.vo.SearchCriteria;
 import oracle.iam.platformservice.api.EntityPublicationService;
-import static tk.sot_tech.oidm.utility.Misc.dbFieldToApiField;
 import static tk.sot_tech.oidm.utility.Misc.nullToEmpty;
 import static tk.sot_tech.oidm.utility.Misc.ownStack;
 import static tk.sot_tech.oidm.utility.UserUtility.USR_LOGIN_IN_OIM;
@@ -70,9 +69,9 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 																	   NoSuchRoleException,
 																	   RoleLookupException {
 		HashSet<String> set = new HashSet<>(1);
-		set.add(dbFieldToApiField(fieldName));
+		set.add(fieldName);
 
-		return (String) service.getDetails(roleId, set).getAttribute(dbFieldToApiField(fieldName));
+		return (String) service.getDetails(roleId, set).getAttribute(fieldName);
 	}
 
 	public long findOrCreateRole(String roleName) throws AccessDeniedException,
