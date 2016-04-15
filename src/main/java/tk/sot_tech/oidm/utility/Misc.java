@@ -135,6 +135,10 @@ public final class Misc {
 		return ResourceBundle.getBundle(file.getName().replace(".properties", ""), Locale.getDefault(), loader);
 	}
 	
+	public static boolean toBoolean(String str){
+		return "1".equals(str) || "true".equalsIgnoreCase(str) || "yes".equalsIgnoreCase(str);
+	}
+	
 	public static String dbFieldToApiField(String field) {
 		return field.toUpperCase().replaceAll(".*_UDF_", "");
 	}
