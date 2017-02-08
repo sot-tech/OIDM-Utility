@@ -136,7 +136,9 @@ public final class Misc {
 	}
 	
 	public static boolean toBoolean(String str){
-		return "1".equals(str) || "true".equalsIgnoreCase(str) || "yes".equalsIgnoreCase(str);
+		return isNullOrEmpty(str) && ("1".equals(str) || 
+									  "true".equalsIgnoreCase(str) || 
+									  "yes".equalsIgnoreCase(str));
 	}
 	
 	public static String dbFieldToApiField(String field) {
