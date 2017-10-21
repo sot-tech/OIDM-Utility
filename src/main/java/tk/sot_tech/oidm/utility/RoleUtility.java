@@ -70,8 +70,8 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 																	   RoleLookupException {
 		HashSet<String> set = new HashSet<>(1);
 		set.add(fieldName);
-
-		return (String) service.getDetails(roleId, set).getAttribute(fieldName);
+		Object attribute = service.getDetails(roleId, set).getAttribute(fieldName);
+		return attribute == null? null : String.valueOf(attribute);
 	}
 
 	public long findOrCreateRole(String roleName) throws AccessDeniedException,
