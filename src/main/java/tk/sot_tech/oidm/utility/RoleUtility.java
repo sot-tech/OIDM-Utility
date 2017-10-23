@@ -64,6 +64,17 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 		search.add(RoleManagerConstants.ROLE_NAME);
 		return service.getDetails(roleId, search).getName();
 	}
+	
+	public String getRoleId(String roleName) throws AccessDeniedException, RoleSearchException{
+		HashSet<String> set = new HashSet<>();
+
+		List<Role> found = service.search(
+			new SearchCriteria(RoleManagerConstants.ROLE_UNIQUE_NAME, roleName,
+							   SearchCriteria.Operator.EQUAL),
+			set,
+			new HashMap<String, Object>());
+		return Misc.isNullOrEmpty(found)? null : found.get(0).getEntityId();
+	}
 
 	public String getRoleField(String roleId, String fieldName) throws AccessDeniedException,
 																	   NoSuchRoleException,
@@ -105,16 +116,24 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 																			ValidationFailedException,
 																			RoleGrantRevokeException {
 		HashSet<String> set = new HashSet<>();
-
-		List<Role> found = service.search(
-			new SearchCriteria(RoleManagerConstants.ROLE_UNIQUE_NAME, roleName,
-							   SearchCriteria.Operator.EQUAL),
-			set,
-			new HashMap<String, Object>());
-		String roleId = found.get(0).getEntityId();
+		String roleId = getRoleId(roleName);
+		if(Misc.isNullOrEmpty(roleId)) return null;
 		set = new HashSet<>(1);
 		set.add(userId);
 		return service.revokeRoleGrant(roleId, set).getStatus();
+	}
+	
+	public String addUserToRole(String userId, String roleName) throws AccessDeniedException,
+																			RoleSearchException,
+																			ValidationFailedException,
+																			RoleGrantException {
+		HashSet<String> set = new HashSet<>();
+		String roleId = getRoleId(roleName);
+		
+		if(Misc.isNullOrEmpty(roleId))	return null;
+		set = new HashSet<>(1);
+		set.add(userId);
+		return service.grantRole(roleId, set).getStatus();
 	}
 
 	public boolean isUserInRoleOrganizations(String userLogin, String roleId) throws
