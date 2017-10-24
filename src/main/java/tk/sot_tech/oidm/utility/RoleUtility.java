@@ -61,7 +61,7 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 	public String getRoleName(String roleId) throws AccessDeniedException, NoSuchRoleException,
 													RoleLookupException {
 		HashSet<String> search = new HashSet<>();
-		search.add(RoleManagerConstants.ROLE_NAME);
+		search.add(RoleManagerConstants.ROLE_UNIQUE_NAME);
 		return service.getDetails(roleId, search).getName();
 	}
 	
