@@ -28,10 +28,7 @@ package tk.sot_tech.oidm.utility;
 import Thor.API.Exceptions.tcAPIException;
 import Thor.API.Exceptions.tcColumnNotFoundException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import oracle.iam.catalog.vo.Catalog;
@@ -60,9 +57,7 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 
 	public String getRoleName(String roleId) throws AccessDeniedException, NoSuchRoleException,
 													RoleLookupException {
-		HashSet<String> search = new HashSet<>();
-		search.add(RoleManagerConstants.ROLE_UNIQUE_NAME);
-		return service.getDetails(roleId, search).getName();
+		return service.getDetails(roleId, Collections.singleton(RoleManagerConstants.ROLE_UNIQUE_NAME)).getName();
 	}
 	
 	public String getRoleId(String roleName) throws AccessDeniedException, RoleSearchException{
@@ -79,9 +74,7 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 	public String getRoleField(String roleId, String fieldName) throws AccessDeniedException,
 																	   NoSuchRoleException,
 																	   RoleLookupException {
-		HashSet<String> set = new HashSet<>(1);
-		set.add(fieldName);
-		Object attribute = service.getDetails(roleId, set).getAttribute(fieldName);
+		Object attribute = service.getDetails(roleId, Collections.singleton(fieldName)).getAttribute(fieldName);
 		return attribute == null? null : String.valueOf(attribute);
 	}
 
@@ -115,25 +108,19 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 																			RoleSearchException,
 																			ValidationFailedException,
 																			RoleGrantRevokeException {
-		HashSet<String> set = new HashSet<>();
 		String roleId = getRoleId(roleName);
 		if(Misc.isNullOrEmpty(roleId)) return null;
-		set = new HashSet<>(1);
-		set.add(userId);
-		return service.revokeRoleGrant(roleId, set).getStatus();
+		return service.revokeRoleGrant(roleId, Collections.singleton(userId)).getStatus();
 	}
 	
 	public String addUserToRole(String userId, String roleName) throws AccessDeniedException,
 																			RoleSearchException,
 																			ValidationFailedException,
 																			RoleGrantException {
-		HashSet<String> set = new HashSet<>();
 		String roleId = getRoleId(roleName);
 		
 		if(Misc.isNullOrEmpty(roleId))	return null;
-		set = new HashSet<>(1);
-		set.add(userId);
-		return service.grantRole(roleId, set).getStatus();
+		return service.grantRole(roleId, Collections.singleton(userId)).getStatus();
 	}
 
 	public boolean isUserInRoleOrganizations(String userLogin, String roleId) throws
@@ -178,10 +165,8 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 	public ArrayList<Long> getPolicies(String roleId) throws AccessDeniedException,
 															 NoSuchRoleException,
 															 RoleLookupException {
-		HashSet<String> set = new HashSet<>(1);
-		set.add(RoleManagerConstants.ACCESS_POLICIES);
 		ArrayList<Long> result = new ArrayList<>();
-		Role details = service.getDetails(roleId, set);
+		Role details = service.getDetails(roleId, Collections.singleton(RoleManagerConstants.ACCESS_POLICIES));
 		LOG.log(Level.FINE, "GOT ROLE DETAILS {0}", details);
 		List<String> accessPolicies = (List<String>) details.getAttribute(
 			RoleManagerConstants.ACCESS_POLICIES);
@@ -228,9 +213,7 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 
 	public boolean isCatalogValueTheSame(String roleId, String name, Object expValue) {
 		try {
-			HashSet<String> hs = new HashSet<>();
-			hs.add(RoleManagerConstants.CATALOG_ATTRIBUTES);
-			Role details = service.getDetails(roleId, hs);
+			Role details = service.getDetails(roleId, Collections.singleton(RoleManagerConstants.CATALOG_ATTRIBUTES));
 			Catalog catalog = (Catalog) details.getAttribute(
 				RoleManagerConstants.CATALOG_ATTRIBUTES);
 			for (MetaData m : catalog.getMetadata()) {

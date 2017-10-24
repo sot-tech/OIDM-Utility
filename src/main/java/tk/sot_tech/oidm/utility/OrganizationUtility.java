@@ -144,9 +144,9 @@ public class OrganizationUtility extends ServiceProvider<tcOrganizationOperation
 
 	protected void getOrgChildren(String orgId, ArrayList<String> orgs) throws OrganizationManagerException {
 		HashSet<String> hs = new HashSet<>();
-		List<Organization> childs = newService.getChildOrganizations(orgId, hs, new HashMap());
-		if (childs != null) {
-			for (Organization org : childs) {
+		List<Organization> children = newService.getChildOrganizations(orgId, hs, new HashMap());
+		if (children != null) {
+			for (Organization org : children) {
 				String childId = org.getEntityId();
 				if (!orgs.contains(childId)) {
 					orgs.add(childId);
