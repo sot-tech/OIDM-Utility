@@ -42,7 +42,6 @@ import oracle.iam.identity.rolemgmt.vo.RoleManagerResult;
 import oracle.iam.platform.authopss.api.PolicyConstants;
 import oracle.iam.platform.authopss.vo.EntityPublication;
 import oracle.iam.platform.authz.exception.AccessDeniedException;
-import oracle.iam.platform.entitymgr.vo.SearchCriteria;
 import oracle.iam.platformservice.api.EntityPublicationService;
 import static tk.sot_tech.oidm.utility.Misc.nullToEmpty;
 import static tk.sot_tech.oidm.utility.Misc.ownStack;
@@ -57,18 +56,15 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 
 	public String getRoleName(String roleId) throws AccessDeniedException, NoSuchRoleException,
 													RoleLookupException {
-		return service.getDetails(roleId, Collections.singleton(RoleManagerConstants.ROLE_UNIQUE_NAME)).getName();
+		return service.getDetails(roleId, Collections.singleton(RoleManagerConstants.ROLE_UNIQUE_NAME)).getUniqueName();
 	}
 	
-	public String getRoleId(String roleName) throws AccessDeniedException, RoleSearchException{
-		HashSet<String> set = new HashSet<>();
-
-		List<Role> found = service.search(
-			new SearchCriteria(RoleManagerConstants.ROLE_UNIQUE_NAME, roleName,
-							   SearchCriteria.Operator.EQUAL),
-			set,
-			new HashMap<String, Object>());
-		return Misc.isNullOrEmpty(found)? null : found.get(0).getEntityId();
+	public String getRoleId(String roleName) throws AccessDeniedException, 
+													RoleSearchException, 
+													SearchKeyNotUniqueException, 
+													NoSuchRoleException, 
+													RoleLookupException{
+		return service.getDetails(RoleManagerConstants.ROLE_UNIQUE_NAME, roleName, new HashSet<String>()).getEntityId();
 	}
 
 	public String getRoleField(String roleId, String fieldName) throws AccessDeniedException,
@@ -88,7 +84,7 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 		HashSet<String> hs = new HashSet<>();
 		Role details = null;
 		try {
-			details = service.getDetails(RoleManagerConstants.ROLE_NAME, roleName, hs);
+			details = service.getDetails(RoleManagerConstants.ROLE_UNIQUE_NAME, roleName, hs);
 		} catch (NoSuchRoleException | RoleLookupException | SearchKeyNotUniqueException | AccessDeniedException ignore) {
 		}
 		if (details == null) {
@@ -107,7 +103,10 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 	public String removeUserFromRole(String userId, String roleName) throws AccessDeniedException,
 																			RoleSearchException,
 																			ValidationFailedException,
-																			RoleGrantRevokeException {
+																			RoleGrantRevokeException,
+																			SearchKeyNotUniqueException,
+																			NoSuchRoleException,
+																			RoleLookupException {
 		String roleId = getRoleId(roleName);
 		if(Misc.isNullOrEmpty(roleId)) return null;
 		return service.revokeRoleGrant(roleId, Collections.singleton(userId)).getStatus();
@@ -116,7 +115,10 @@ public class RoleUtility extends ServiceProvider<RoleManager> {
 	public String addUserToRole(String userId, String roleName) throws AccessDeniedException,
 																			RoleSearchException,
 																			ValidationFailedException,
-																			RoleGrantException {
+																			RoleGrantException,
+																			SearchKeyNotUniqueException,
+																			NoSuchRoleException,
+																			RoleLookupException {
 		String roleId = getRoleId(roleName);
 		
 		if(Misc.isNullOrEmpty(roleId))	return null;
