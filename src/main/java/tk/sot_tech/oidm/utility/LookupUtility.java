@@ -32,6 +32,7 @@ import Thor.API.Operations.tcLookupOperationsIntf;
 import Thor.API.tcResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class LookupUtility extends ServiceProvider<tcLookupOperationsIntf> {
 	
@@ -39,7 +40,7 @@ public class LookupUtility extends ServiceProvider<tcLookupOperationsIntf> {
 							LK_DECODE_IN_OIM = "Lookup Definition.Lookup Code Information.Decode";
 	
 	public HashMap<String, String> getLookup(String name) throws tcAPIException, tcInvalidLookupException, tcColumnNotFoundException {
-		HashMap<String, String> cache = new HashMap<>();
+		HashMap<String, String> cache = new LinkedHashMap<>();
 		tcResultSet result = service.getLookupValues(name);
 		for (int i = 0; i < result.getRowCount(); ++i) {
 			result.goToRow(i);
@@ -49,7 +50,7 @@ public class LookupUtility extends ServiceProvider<tcLookupOperationsIntf> {
 		return cache;
 	}
 	
-	public ArrayList<Pair<String, String>> getLookupOrderedNotUnique(String name) throws tcColumnNotFoundException, tcAPIException, tcInvalidLookupException{
+	public ArrayList<Pair<String, String>> getLookupNotUnique(String name) throws tcColumnNotFoundException, tcAPIException, tcInvalidLookupException{
 		ArrayList<Pair<String, String>> cache = new ArrayList<>();
 		tcResultSet result = service.getLookupValues(name);
 		for (int i = 0; i < result.getRowCount(); ++i) {
