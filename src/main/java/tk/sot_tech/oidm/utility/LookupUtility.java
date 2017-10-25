@@ -30,6 +30,7 @@ import Thor.API.Exceptions.tcColumnNotFoundException;
 import Thor.API.Exceptions.tcInvalidLookupException;
 import Thor.API.Operations.tcLookupOperationsIntf;
 import Thor.API.tcResultSet;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class LookupUtility extends ServiceProvider<tcLookupOperationsIntf> {
@@ -44,6 +45,17 @@ public class LookupUtility extends ServiceProvider<tcLookupOperationsIntf> {
 			result.goToRow(i);
 			cache.put(result.getStringValue(LK_CODE_IN_OIM),
 				result.getStringValue(LK_DECODE_IN_OIM));
+		}
+		return cache;
+	}
+	
+	public ArrayList<Pair<String, String>> getLookupOrderedNotUnique(String name) throws tcColumnNotFoundException, tcAPIException, tcInvalidLookupException{
+		ArrayList<Pair<String, String>> cache = new ArrayList<>();
+		tcResultSet result = service.getLookupValues(name);
+		for (int i = 0; i < result.getRowCount(); ++i) {
+			result.goToRow(i);
+			cache.add(new Pair<>(result.getStringValue(LK_CODE_IN_OIM),
+				result.getStringValue(LK_DECODE_IN_OIM)));
 		}
 		return cache;
 	}
