@@ -102,7 +102,7 @@ public class OrganizationUtility extends ServiceProvider<tcOrganizationOperation
 		}
 	}
 
-	public String getOrgNameByKey(long key) throws tcAPIException, tcColumnNotFoundException {
+	public String getOrgName(long key) throws tcAPIException, tcColumnNotFoundException {
 		HashMap<String, String> hm = new HashMap<>();
 		hm.put(ORG_KEY_IN_OIM, String.valueOf(key));
 		tcResultSet org = service.findOrganizations(hm);
