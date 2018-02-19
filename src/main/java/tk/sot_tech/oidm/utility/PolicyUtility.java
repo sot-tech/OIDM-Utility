@@ -39,11 +39,12 @@ import static tk.sot_tech.oidm.utility.Misc.isNullOrEmpty;
 import static tk.sot_tech.oidm.utility.RoleUtility.ROLE_KEY_IN_OIM;
 
 public class PolicyUtility extends ServiceProvider<tcAccessPolicyOperationsIntf> {
+
 	private static final Logger LOG = Logger.getLogger(PolicyUtility.class.getName());
 
 	public void clearChildRecordsInTable(AccessPolicyResourceData data, String tableName) throws tcAPIException, tcColumnNotFoundException {
-		String formKey = null;
-		try(ResourceUtility resObjUtil = new ResourceUtility()){
+		String formKey;
+		try (ResourceUtility resObjUtil = new ResourceUtility()) {
 			formKey = String.valueOf(resObjUtil.getFormKey(tableName));
 		}
 		PolicyChildTableRecord[] childTableRecords = data.getChildTableRecords(formKey);
@@ -55,15 +56,20 @@ public class PolicyUtility extends ServiceProvider<tcAccessPolicyOperationsIntf>
 	}
 
 	public long createOwnPolicy(long roleId, long objectKey, long parentFormKey, long itKey, String policyName,
-								String policyDescription,
-								String itResourceField,
-								String objectName,
-								String formName) throws tcObjectNotFoundException, 
-														tcGroupNotFoundException, 
-														tcInvalidAttributeException, 
-														tcObjectNotAssignedException, 
-														tcAPIException  {
+								String policyDescription) throws tcObjectNotFoundException,
+														tcGroupNotFoundException,
+														tcInvalidAttributeException,
+														tcObjectNotAssignedException,
+														tcAPIException,
+														tcColumnNotFoundException,
+														tcFormNotFoundException {
 		HashMap attr = new HashMap();
+		String formName, itResourceField, objectName;
+		try (ResourceUtility ru = new ResourceUtility()) {
+			formName = ru.getFormName(parentFormKey);
+			itResourceField = ru.getFormItResourceFieldName(formName);
+			objectName = ru.getObjectName(objectKey);
+		}
 		attr.put("Access Policies.Name", policyName); // Policy Name		
 		attr.put("Access Policies.Description", policyDescription); // Description same as Policy Name
 		attr.put("Access Policies.Retrofit Flag", "1"); // Retrofit Flag
@@ -79,12 +85,12 @@ public class PolicyUtility extends ServiceProvider<tcAccessPolicyOperationsIntf>
 		data[0].setFormData(formData);
 		return service.createAccessPolicy(attr, provObjKeys, revokeObjIsNotApply, denyObjKeys, groupKeys, data);
 	}
-	
-	public String getPolicyName(long key) throws tcAPIException, tcColumnNotFoundException{
+
+	public String getPolicyName(long key) throws tcAPIException, tcColumnNotFoundException {
 		HashMap search = new HashMap();
 		search.put("Access Policies.Key", key);
 		tcResultSet found = service.findAccessPolicies(search);
-		if(!isNullOrEmpty(found)){
+		if (!isNullOrEmpty(found)) {
 			found.goToRow(0);
 			return found.getStringValue("Access Policies.Name");
 		}
@@ -92,17 +98,14 @@ public class PolicyUtility extends ServiceProvider<tcAccessPolicyOperationsIntf>
 	}
 
 	public long findOrCreatePolicyAndSetRole(String polName, String polDescription, long roleId, long objectKey, long parentFormKey,
-																	long itResourceKey,
-																	String itResourceField,
-																	String objectName,
-																	String parentTableName) throws AccessDeniedException,
-																			   NoSuchRoleException,
-																			   RoleLookupException,
-																			   ValidationFailedException,
-																			   RoleAlreadyExistsException,
-																			   RoleCreateException,
-																			   tcAPIException,
-																			   Exception {
+											 long itResourceKey) throws AccessDeniedException,
+																		NoSuchRoleException,
+																		RoleLookupException,
+																		ValidationFailedException,
+																		RoleAlreadyExistsException,
+																		RoleCreateException,
+																		tcAPIException,
+																		Exception {
 		LOG.log(Level.INFO, "Creating/updating policy {0}", polName);
 		HashMap<String, Object> search = new HashMap<>();
 		search.put("Access Policies.Name", polName);
@@ -110,20 +113,16 @@ public class PolicyUtility extends ServiceProvider<tcAccessPolicyOperationsIntf>
 		long ownPolicyId;
 		if (isNullOrEmpty(found)) {
 			ownPolicyId = createOwnPolicy(roleId, objectKey, parentFormKey, itResourceKey,
-													 polName,
-													 polDescription,
-													 itResourceField, objectName,
-													 parentTableName);
-		}
-		else {
+										  polName,
+										  polDescription);
+		} else {
 			found.goToRow(0);
 			ownPolicyId = found.getLongValue("Access Policies.Key");
 		}
 		tcResultSet assignedGroups = service.getAssignedGroups(ownPolicyId);
 		if (assignedGroups == null || assignedGroups.isEmpty()) {
 			service.assignGroups(ownPolicyId, new long[]{roleId});
-		}
-		else {
+		} else {
 			boolean exist = false;
 			for (int i = 0; i < assignedGroups.getRowCount(); ++i) {
 				assignedGroups.goToRow(i);
@@ -145,4 +144,5 @@ public class PolicyUtility extends ServiceProvider<tcAccessPolicyOperationsIntf>
 	protected Class<? extends tcAccessPolicyOperationsIntf> getServiceClass() {
 		return tcAccessPolicyOperationsIntf.class;
 	}
+
 }

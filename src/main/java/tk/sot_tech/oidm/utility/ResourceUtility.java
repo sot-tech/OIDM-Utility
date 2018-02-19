@@ -32,6 +32,7 @@ import Thor.API.Operations.tcObjectOperationsIntf;
 import Thor.API.tcResultSet;
 import java.io.Serializable;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import oracle.iam.api.OIMService;
@@ -99,6 +100,15 @@ public class ResourceUtility extends ServiceProvider {
 		return found.getLongValue("Structure Utility.Key");
 
 	}
+	
+	public String getFormName(long key) throws tcAPIException, tcColumnNotFoundException {
+		HashMap<String, Object> search = new HashMap<>();
+		search.put("Structure Utility.Key", key);
+		tcResultSet found = formService.findForms(search);
+		found.goToRow(0);
+		return found.getStringValue("Structure Utility.Table Name");
+
+	}
 
 	public long getObjectKey(String name) throws tcAPIException, tcColumnNotFoundException {
 		HashMap<String, Object> search = new HashMap<>();
@@ -106,6 +116,14 @@ public class ResourceUtility extends ServiceProvider {
 		tcResultSet found = objectService.findObjects(search);
 		found.goToRow(0);
 		return found.getLongValue("Objects.Key");
+	}
+	
+	public String getObjectName(long key) throws tcAPIException, tcColumnNotFoundException {
+		HashMap<String, Object> search = new HashMap<>();
+		search.put("Objects.Key", key);
+		tcResultSet found = objectService.findObjects(search);
+		found.goToRow(0);
+		return found.getStringValue("Objects.Name");
 	}
 
 	public Map<String, Object> getFormFieldsForRender(String formName, Map<String, Object> data)
@@ -138,6 +156,14 @@ public class ResourceUtility extends ServiceProvider {
 	public String getFormItResourceFieldName(String formName) throws tcAPIException,
 																	 tcFormNotFoundException,
 																	 tcColumnNotFoundException {
+		ArrayList<String> formFields = getFormFieldNamesByType(formName, "ITResourceLookupField");
+		return formFields.isEmpty()?null:formFields.get(0);
+	}
+	
+	public HashMap<String, String> getFormFieldNamesAndTypes(String formName) throws tcAPIException,
+																	 tcFormNotFoundException,
+																	 tcColumnNotFoundException {
+		HashMap<String, String> res = new HashMap<>();
 		long formKey = getFormKey(formName);
 		tcResultSet rs = formService.getFormVersions(formKey);
 		if (!isNullOrEmpty(rs)) {
@@ -148,12 +174,22 @@ public class ResourceUtility extends ServiceProvider {
 				rs.goToRow(i);
 				String field = rs.getStringValue("Structure Utility.Additional Columns.Name"),
 					type = rs.getStringValue("Structure Utility.Additional Columns.Field Type");
-				if ("ITResourceLookupField".equals(type)) {
-					return field;
-				}
+				res.put(field, type);
 			}
 		}
-		return null;
+		return res;
+	}
+	
+	public ArrayList<String> getFormFieldNamesByType(String formName, String type) throws tcAPIException,
+																	 tcFormNotFoundException,
+																	 tcColumnNotFoundException{
+		ArrayList<String> res = new ArrayList<>();
+		for(Entry<String, String> e : getFormFieldNamesAndTypes(formName).entrySet()){
+			if(type.equalsIgnoreCase(e.getValue())){
+				res.add(e.getKey());
+			}
+		}
+		return res;
 	}
 
 	public String getAppInstanceName(long objectId, long itResource) throws
