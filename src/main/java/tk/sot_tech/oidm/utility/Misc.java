@@ -136,7 +136,7 @@ public final class Misc {
 	}
 	
 	public static boolean toBoolean(String str){
-		return isNullOrEmpty(str) && ("1".equals(str) || 
+		return !isNullOrEmpty(str) && ("1".equals(str) || 
 									  "true".equalsIgnoreCase(str) || 
 									  "yes".equalsIgnoreCase(str));
 	}
