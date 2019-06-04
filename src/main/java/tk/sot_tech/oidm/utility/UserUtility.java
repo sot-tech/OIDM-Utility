@@ -91,6 +91,10 @@ public class UserUtility extends ServiceProvider<tcUserOperationsIntf> {
 		rs.goToRow(0);
 		return rs.getStringValue(fieldName);
 	}
+	
+	public String getUserAttributeByUserKey(String userKey, String fieldName) throws tcAPIException, tcColumnNotFoundException{
+		return getUserAttribute(Long.decode(userKey), fieldName);
+	}
 
 	/**
 	 *
