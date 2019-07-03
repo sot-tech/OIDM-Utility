@@ -66,10 +66,10 @@ public class ITResourceUtility extends ServiceProvider<tcITResourceInstanceOpera
 		hm.put(IT_NAME_IN_OIM, name);
 		tcResultSet its = service.findITResourceInstances(hm);
 		if (its == null || its.isEmpty()) {
-			throw new IllegalArgumentException(name + " not exist");
+			throw new IllegalArgumentException("IT Resource " + name + " not exist");
 		}
 		else if (its.getRowCount() > 1) {
-			throw new IllegalArgumentException(name + " not unnique");
+			throw new IllegalArgumentException("IT Resource " + name + " not unique");
 		}
 		its.goToRow(0);
 		return its.getLongValue(IT_KEY_IN_OIM);

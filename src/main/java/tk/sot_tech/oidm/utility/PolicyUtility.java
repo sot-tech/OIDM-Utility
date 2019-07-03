@@ -75,7 +75,7 @@ public class PolicyUtility extends ServiceProvider<tcAccessPolicyOperationsIntf>
 		attr.put("Access Policies.Retrofit Flag", "1"); // Retrofit Flag
 		attr.put("Access Policies.By Request", "0"); // Without Approval
 		long[] provObjKeys = {objectKey}; //Object Key of Resource to be provisioned
-		boolean[] revokeObjIsNotApply = {true}; //Revoke If No Longer Applies Flag
+		boolean[] revokeObjIsNotApply = {false}; //Revoke If No Longer Applies Flag
 		long[] denyObjKeys = {}; //Object key of Resource to be denied
 		long[] groupKeys = {roleId};
 
