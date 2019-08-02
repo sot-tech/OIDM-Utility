@@ -69,10 +69,25 @@ public class ResourceUtility extends ServiceProvider {
 	private final tcFormInstanceOperationsIntf formInstanceService = Platform.getService(
 		tcFormInstanceOperationsIntf.class);
 
-	public static final String[] FORM_IGNORE_FIELDS = {"_KEY", "_CREATE", "_ROWVER", "_UPDATE",
+	public static final String[] FORM_SYSTEM_FIELDS = {"_KEY", "_CREATE", "_ROWVER", "_UPDATE",
 													   "_CREATEBY",
 													   "_REVOKE", "_NOTE", "_UPDATEBY", "_VERSION",
 													   "_DATA_LEVEL"};
+	
+	public static final String FORM_FIELD_NAME = "Structure Utility.Additional Columns.Name",
+		FORM_FIELD_KEY = "Structure Utility.Additional Columns.Key",
+		FORM_FIELD_LABEL = "Structure Utility.Additional Columns.Field Label", 
+		FORM_NAME = "Structure Utility.Table Name", 
+		FORM_KEY = "Structure Utility.Key",
+		FORM_DESCRIPTION = "Structure Utility.Description",
+		FORM_ACTIVE_VERSION = "Structure Utility.Active Version",
+		FORM_FIELD_ENCRYPTED = "Structure Utility.Additional Columns.Encrypted",
+		FORM_FIELD_VISIBLE = "VISIBLE",
+		FORM_FIELD_ORDER = "Structure Utility.Additional Columns.Order",
+		FORM_FIELD_TYPE = "Structure Utility.Additional Columns.Field Type",
+		FORM_FIELD_LOOKUP_CODE = "LOOKUPCODE",
+		OBJECT_KEY = "Objects.Key",
+		OBJECT_NAME = "Objects.Name";
 
 	private static final Logger LOG = Logger.getLogger(ResourceUtility.class.getName());
 
@@ -94,56 +109,54 @@ public class ResourceUtility extends ServiceProvider {
 
 	public long getFormKey(String name) throws tcAPIException, tcColumnNotFoundException {
 		HashMap<String, Object> search = new HashMap<>();
-		search.put("Structure Utility.Table Name", name);
+		search.put(FORM_NAME, name);
 		tcResultSet found = formService.findForms(search);
 		found.goToRow(0);
-		return found.getLongValue("Structure Utility.Key");
+		return found.getLongValue(FORM_KEY);
 
 	}
-	
+
 	public String getFormName(long key) throws tcAPIException, tcColumnNotFoundException {
 		HashMap<String, Object> search = new HashMap<>();
-		search.put("Structure Utility.Key", key);
+		search.put(FORM_KEY, key);
 		tcResultSet found = formService.findForms(search);
 		found.goToRow(0);
-		return found.getStringValue("Structure Utility.Table Name");
+		return found.getStringValue(FORM_NAME);
 
 	}
 
 	public long getObjectKey(String name) throws tcAPIException, tcColumnNotFoundException {
 		HashMap<String, Object> search = new HashMap<>();
-		search.put("Objects.Name", name);
+		search.put(OBJECT_NAME, name);
 		tcResultSet found = objectService.findObjects(search);
 		found.goToRow(0);
-		return found.getLongValue("Objects.Key");
+		return found.getLongValue(OBJECT_KEY);
 	}
-	
+
 	public String getObjectName(long key) throws tcAPIException, tcColumnNotFoundException {
 		HashMap<String, Object> search = new HashMap<>();
-		search.put("Objects.Key", key);
+		search.put(OBJECT_KEY, key);
 		tcResultSet found = objectService.findObjects(search);
 		found.goToRow(0);
-		return found.getStringValue("Objects.Name");
+		return found.getStringValue(OBJECT_NAME);
 	}
 
 	public Map<String, Object> getFormFieldsForRender(String formName, Map<String, Object> data)
 		throws tcAPIException, tcColumnNotFoundException, tcFormNotFoundException {
-		for (String s : FORM_IGNORE_FIELDS) {
+		for (String s : FORM_SYSTEM_FIELDS) {
 			data.remove(formName + s);
 		}
 		long formKey = getFormKey(formName);
 		tcResultSet rs = formService.getFormVersions(formKey);
 		if (!isNullOrEmpty(rs)) {
 			rs.goToRow(0);
-			int lastVer = rs.getIntValue("Structure Utility.Active Version");
+			int lastVer = rs.getIntValue(FORM_ACTIVE_VERSION);
 			rs = formService.getFormFields(formKey, lastVer);
 			for (int i = 0; i < rs.getRowCount(); ++i) {
 				rs.goToRow(i);
-				String field = rs.getStringValue("Structure Utility.Additional Columns.Name"),
-					label = rs.getStringValue("Structure Utility.Additional Columns.Field Label");
-				if ("1".equalsIgnoreCase(rs.getStringValue(
-					"Structure Utility.Additional Columns.Encrypted"))
-					|| "false".equalsIgnoreCase(rs.getStringValue("VISIBLE"))) {
+				String field = rs.getStringValue(FORM_FIELD_NAME),
+					label = rs.getStringValue(FORM_FIELD_LABEL);
+				if (Misc.toBoolean(rs.getStringValue(FORM_FIELD_ENCRYPTED)) || "false".equalsIgnoreCase(rs.getStringValue(FORM_FIELD_VISIBLE))) {
 					data.remove(field);
 				} else if (!isNullOrEmpty(label)) {
 					data.put(label, data.remove(field));
@@ -153,39 +166,120 @@ public class ResourceUtility extends ServiceProvider {
 		return data;
 	}
 
-	public String getFormItResourceFieldName(String formName) throws tcAPIException,
+	public Map<String, String> getFormFieldNamesAndLabels(String formName) throws tcAPIException,
 																	 tcFormNotFoundException,
-																	 tcColumnNotFoundException {
-		ArrayList<String> formFields = getFormFieldNamesByType(formName, "ITResourceLookupField");
-		return formFields.isEmpty()?null:formFields.get(0);
-	}
-	
-	public HashMap<String, String> getFormFieldNamesAndTypes(String formName) throws tcAPIException,
-																	 tcFormNotFoundException,
-																	 tcColumnNotFoundException {
+																	 tcColumnNotFoundException{
 		HashMap<String, String> res = new HashMap<>();
 		long formKey = getFormKey(formName);
 		tcResultSet rs = formService.getFormVersions(formKey);
 		if (!isNullOrEmpty(rs)) {
 			rs.goToRow(0);
-			int lastVer = rs.getIntValue("Structure Utility.Active Version");
+			int lastVer = rs.getIntValue(FORM_ACTIVE_VERSION);
 			rs = formService.getFormFields(formKey, lastVer);
 			for (int i = 0; i < rs.getRowCount(); ++i) {
 				rs.goToRow(i);
-				String field = rs.getStringValue("Structure Utility.Additional Columns.Name"),
-					type = rs.getStringValue("Structure Utility.Additional Columns.Field Type");
-				res.put(field, type);
+				String name = rs.getStringValue(FORM_FIELD_NAME),
+					label = rs.getStringValue(FORM_FIELD_LABEL);
+				res.put(name, label);
 			}
 		}
 		return res;
 	}
 	
-	public ArrayList<String> getFormFieldNamesByType(String formName, String type) throws tcAPIException,
+	public Map<String, Long> getFormFieldNamesAndKeys(String formName) throws tcAPIException,
 																	 tcFormNotFoundException,
 																	 tcColumnNotFoundException{
+		HashMap<String, Long> res = new HashMap<>();
+		long formKey = getFormKey(formName);
+		tcResultSet rs = formService.getFormVersions(formKey);
+		if (!isNullOrEmpty(rs)) {
+			rs.goToRow(0);
+			int lastVer = rs.getIntValue(FORM_ACTIVE_VERSION);
+			rs = formService.getFormFields(formKey, lastVer);
+			for (int i = 0; i < rs.getRowCount(); ++i) {
+				rs.goToRow(i);
+				String name = rs.getStringValue(FORM_FIELD_NAME);
+				long key = rs.getLongValue(FORM_FIELD_KEY);
+				res.put(name, key);
+			}
+		}
+		return res;
+	}
+	
+	public Map<String, Long> getFormFieldOrders(String formName) throws tcAPIException,
+																	 tcFormNotFoundException,
+																	 tcColumnNotFoundException{
+		HashMap<String, Long> orders = new HashMap<>();
+		long formKey = getFormKey(formName);
+		tcResultSet rs = formService.getFormVersions(formKey);
+		if (!isNullOrEmpty(rs)) {
+			rs.goToRow(0);
+			int lastVer = rs.getIntValue(FORM_ACTIVE_VERSION);
+			rs = formService.getFormFields(formKey, lastVer);
+			for (int i = 0; i < rs.getRowCount(); ++i) {
+				rs.goToRow(i);
+				String name = rs.getStringValue(FORM_FIELD_NAME);
+				long order = rs.getLongValue(FORM_FIELD_ORDER);
+				orders.put(name, order);
+			}
+		}
+		return orders;
+	}
+	
+	public <T> LinkedHashMap<String, T> getFormFieldsOrdered(String formName, Map<String, T> fieldNameValues) throws tcAPIException,
+																	 tcFormNotFoundException,
+																	 tcColumnNotFoundException{
+		LinkedHashMap<String, T> result = new LinkedHashMap<>();
+		final Map<String, Long> orders = getFormFieldOrders(formName);
+		ArrayList<String> names = new ArrayList<>(fieldNameValues.keySet());
+		Collections.sort(names, new Comparator<String>() {
+			@Override
+			public int compare(String t0, String t1) {
+				Long l0 = orders.get(t0), l1 = orders.get(t1);
+				return Long.compare(l0 == null?Long.MAX_VALUE:l0, l1 == null?Long.MAX_VALUE:l1);
+			}
+		});
+		for(String name : names){
+			result.put(name, fieldNameValues.get(name));
+		}
+		return result;
+	}
+
+	public String getFormItResourceFieldName(String formName) throws tcAPIException,
+																	 tcFormNotFoundException,
+																	 tcColumnNotFoundException {
+		ArrayList<String> formFields = getFormFieldNamesByType(formName, "ITResourceLookupField");
+		return formFields.isEmpty() ? null : formFields.get(0);
+	}
+
+	public Map<String, Pair<String, String>> getFormFieldNamesAndTypes(String formName) throws tcAPIException,
+																					 tcFormNotFoundException,
+																					 tcColumnNotFoundException {
+		HashMap<String, Pair<String, String>> res = new HashMap<>();
+		long formKey = getFormKey(formName);
+		tcResultSet rs = formService.getFormVersions(formKey);
+		if (!isNullOrEmpty(rs)) {
+			rs.goToRow(0);
+			int lastVer = rs.getIntValue(FORM_ACTIVE_VERSION);
+			rs = formService.getFormFields(formKey, lastVer);
+			List<String> fields = Arrays.asList(rs.getColumnNames());
+			for (int i = 0; i < rs.getRowCount(); ++i) {
+				rs.goToRow(i);
+				String field = rs.getStringValue(FORM_FIELD_NAME),
+					type = rs.getStringValue(FORM_FIELD_TYPE),
+					lookup = fields.contains(FORM_FIELD_LOOKUP_CODE) ? rs.getStringValue(FORM_FIELD_LOOKUP_CODE) : null;
+				res.put(field, new Pair<>(type, lookup));
+			}
+		}
+		return res;
+	}
+
+	public ArrayList<String> getFormFieldNamesByType(String formName, String type) throws tcAPIException,
+																						  tcFormNotFoundException,
+																						  tcColumnNotFoundException {
 		ArrayList<String> res = new ArrayList<>();
-		for(Entry<String, String> e : getFormFieldNamesAndTypes(formName).entrySet()){
-			if(type.equalsIgnoreCase(e.getValue())){
+		for (Entry<String, Pair<String, String>> e : getFormFieldNamesAndTypes(formName).entrySet()) {
+			if (type.equalsIgnoreCase(e.getValue().key)) {
 				res.add(e.getKey());
 			}
 		}
@@ -217,10 +311,10 @@ public class ResourceUtility extends ServiceProvider {
 
 	public String getFormDescription(String name) throws tcAPIException, tcColumnNotFoundException {
 		HashMap<String, Object> search = new HashMap<>();
-		search.put("Structure Utility.Table Name", name);
+		search.put(FORM_NAME, name);
 		tcResultSet found = formService.findForms(search);
 		found.goToRow(0);
-		return found.getStringValue("Structure Utility.Description");
+		return found.getStringValue(FORM_DESCRIPTION);
 	}
 
 	public String renderFormValues(Map<String, Object> data) throws tcAPIException,
@@ -298,13 +392,13 @@ public class ResourceUtility extends ServiceProvider {
 //		return account.getAccountType() == ACCOUNT_TYPE.Primary;
 //	}
 	public String getPrimaryResourceField(String userLogin, String appInstanceName, String fieldName)
-															throws tcAPIException, 
-																   tcColumnNotFoundException, 
-																	UserNotFoundException, 
-																	GenericProvisioningException, 
-																	tcNotAtomicProcessException,
-																	tcFormNotFoundException, 
-																	tcProcessNotFoundException {
+		throws tcAPIException,
+			   tcColumnNotFoundException,
+			   UserNotFoundException,
+			   GenericProvisioningException,
+			   tcNotAtomicProcessException,
+			   tcFormNotFoundException,
+			   tcProcessNotFoundException {
 		String userId = null;
 		try (UserUtility uu = new UserUtility()) {
 			userId = uu.getUserAttribute(userLogin, USR_KEY_IN_OIM);
@@ -421,18 +515,17 @@ public class ResourceUtility extends ServiceProvider {
 //	public String initUpdateResourceRequest(String userKey, String procInstKey, String field, Date value) throws OIMServiceException {
 //		return initUpdateResourceRequest(userKey, procInstKey, field, value, RequestBeneficiaryEntityAttribute.TYPE.Date);
 //	}
-
 	public String initCreateResourceRequest(String userKey, String applicationInstanceName,
 											HashMap<String, Serializable> fields, boolean eh) throws tcAPIException, tcColumnNotFoundException,
 																									 tcFormNotFoundException, OIMServiceException {
 		ApplicationInstanceService ais = eh
 										 ? oracle.iam.platform.Platform.getServiceForEventHandlers(ApplicationInstanceService.class,
-																			   null, null, null, null)
+																								   null, null, null, null)
 										 : Platform.getService(ApplicationInstanceService.class);
 		ApplicationInstance applicationInstance = ais.findApplicationInstanceByName(applicationInstanceName);
 		OIMService oimService = eh
 								? oracle.iam.platform.Platform.getServiceForEventHandlers(OIMService.class,
-																	  null, null, null, null)
+																						  null, null, null, null)
 								: Platform.getService(OIMService.class);
 		RequestData requestData = new RequestData();
 		Beneficiary beneficiary = new Beneficiary();
@@ -451,17 +544,13 @@ public class ResourceUtility extends ServiceProvider {
 			if (value != null) {
 				if (value instanceof Integer) {
 					type = RequestBeneficiaryEntityAttribute.TYPE.Integer;
-				}
-				else if (value instanceof Long) {
+				} else if (value instanceof Long) {
 					type = RequestBeneficiaryEntityAttribute.TYPE.Long;
-				}
-				else if (value instanceof Date) {
+				} else if (value instanceof Date) {
 					type = RequestBeneficiaryEntityAttribute.TYPE.Date;
-				}
-				else if (value instanceof Boolean) {
+				} else if (value instanceof Boolean) {
 					type = RequestBeneficiaryEntityAttribute.TYPE.Boolean;
-				}
-				else {
+				} else {
 					type = RequestBeneficiaryEntityAttribute.TYPE.String;
 					value = String.valueOf(value);
 				}
@@ -500,7 +589,7 @@ public class ResourceUtility extends ServiceProvider {
 	public String initRevokeResourceRequest(String userKey, String applicationInstanceName, String accountId, boolean eh) throws OIMServiceException {
 		OIMService oimService = eh
 								? oracle.iam.platform.Platform.getServiceForEventHandlers(OIMService.class,
-																	  null, null, null, null)
+																						  null, null, null, null)
 								: Platform.getService(OIMService.class);
 		RequestData requestData = new RequestData();
 		Beneficiary beneficiary = new Beneficiary();
