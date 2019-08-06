@@ -35,36 +35,51 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class LookupUtility extends ServiceProvider<tcLookupOperationsIntf> {
-	
+
 	public static final String LK_CODE_IN_OIM = "Lookup Definition.Lookup Code Information.Code Key",
-							LK_DECODE_IN_OIM = "Lookup Definition.Lookup Code Information.Decode";
-	
+		LK_DECODE_IN_OIM = "Lookup Definition.Lookup Code Information.Decode",
+		LK_KEY_IN_OIM = "Lookup Definition.Lookup Code Information.Key";
+
 	public HashMap<String, String> getLookup(String name) throws tcAPIException, tcInvalidLookupException, tcColumnNotFoundException {
 		HashMap<String, String> cache = new LinkedHashMap<>();
 		tcResultSet result = service.getLookupValues(name);
 		for (int i = 0; i < result.getRowCount(); ++i) {
 			result.goToRow(i);
 			cache.put(result.getStringValue(LK_CODE_IN_OIM),
-				result.getStringValue(LK_DECODE_IN_OIM));
+					  result.getStringValue(LK_DECODE_IN_OIM));
 		}
 		return cache;
 	}
-	
-	public ArrayList<Pair<String, String>> getLookupNotUnique(String name) throws tcColumnNotFoundException, tcAPIException, tcInvalidLookupException{
+
+	public HashMap<Long, Pair<String, String>> getLookupWithKeys(String name) throws tcAPIException, tcInvalidLookupException,
+																					 tcColumnNotFoundException {
+		HashMap<Long, Pair<String, String>> cache = new LinkedHashMap<>();
+		tcResultSet result = service.getLookupValues(name);
+		for (int i = 0; i < result.getRowCount(); ++i) {
+			result.goToRow(i);
+			cache.put(result.getLongValue(LK_KEY_IN_OIM),
+					  new Pair<>(result.getStringValue(LK_CODE_IN_OIM),
+								 result.getStringValue(LK_DECODE_IN_OIM)));
+		}
+		return cache;
+	}
+
+	public ArrayList<Pair<String, String>> getLookupNotUnique(String name) throws tcColumnNotFoundException, tcAPIException, tcInvalidLookupException {
 		ArrayList<Pair<String, String>> cache = new ArrayList<>();
 		tcResultSet result = service.getLookupValues(name);
 		for (int i = 0; i < result.getRowCount(); ++i) {
 			result.goToRow(i);
 			cache.add(new Pair<>(result.getStringValue(LK_CODE_IN_OIM),
-				result.getStringValue(LK_DECODE_IN_OIM)));
+								 result.getStringValue(LK_DECODE_IN_OIM)));
 		}
 		return cache;
 	}
-	
-	public HashMap<String, String> clearLookup(String name) throws tcAPIException, tcInvalidLookupException, tcColumnNotFoundException{
+
+	public HashMap<String, String> clearLookup(String name) throws tcAPIException, tcInvalidLookupException, tcColumnNotFoundException {
 		HashMap<String, String> lookup = getLookup(name);
-		if(!lookup.isEmpty())
+		if (!lookup.isEmpty()) {
 			service.removeBulkLookupValues(name, lookup.keySet());
+		}
 		return lookup;
 	}
 
@@ -72,5 +87,5 @@ public class LookupUtility extends ServiceProvider<tcLookupOperationsIntf> {
 	protected Class<tcLookupOperationsIntf> getServiceClass() {
 		return tcLookupOperationsIntf.class;
 	}
-	
+
 }

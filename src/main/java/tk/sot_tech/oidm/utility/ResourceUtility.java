@@ -41,18 +41,13 @@ import oracle.iam.platform.authopss.exception.AccessDeniedException;
 import oracle.iam.platform.entitymgr.vo.SearchCriteria;
 import oracle.iam.platform.utils.vo.OIMType;
 import oracle.iam.provisioning.api.ApplicationInstanceService;
+import oracle.iam.provisioning.api.EntitlementService;
+import oracle.iam.provisioning.api.ProvisioningConstants;
 import oracle.iam.provisioning.api.ProvisioningService;
-import oracle.iam.provisioning.exception.AccountNotFoundException;
-import oracle.iam.provisioning.exception.GenericAppInstanceServiceException;
-import oracle.iam.provisioning.exception.GenericProvisioningException;
-import oracle.iam.provisioning.exception.UserNotFoundException;
-import oracle.iam.provisioning.vo.Account;
+import oracle.iam.provisioning.exception.*;
 import static oracle.iam.provisioning.vo.Account.ACCOUNT_TYPE.Primary;
-import oracle.iam.provisioning.vo.AccountData;
-import oracle.iam.provisioning.vo.ApplicationInstance;
-import oracle.iam.provisioning.vo.ChildTableRecord;
+import oracle.iam.provisioning.vo.*;
 import oracle.iam.request.vo.*;
-import oracle.iam.vo.OperationResult;
 import static tk.sot_tech.oidm.utility.Misc.OPERATION_SUCCESS_VALUE;
 import static tk.sot_tech.oidm.utility.Misc.isNullOrEmpty;
 import static tk.sot_tech.oidm.utility.Misc.ownStack;
@@ -73,11 +68,11 @@ public class ResourceUtility extends ServiceProvider {
 													   "_CREATEBY",
 													   "_REVOKE", "_NOTE", "_UPDATEBY", "_VERSION",
 													   "_DATA_LEVEL"};
-	
+
 	public static final String FORM_FIELD_NAME = "Structure Utility.Additional Columns.Name",
 		FORM_FIELD_KEY = "Structure Utility.Additional Columns.Key",
-		FORM_FIELD_LABEL = "Structure Utility.Additional Columns.Field Label", 
-		FORM_NAME = "Structure Utility.Table Name", 
+		FORM_FIELD_LABEL = "Structure Utility.Additional Columns.Field Label",
+		FORM_NAME = "Structure Utility.Table Name",
 		FORM_KEY = "Structure Utility.Key",
 		FORM_DESCRIPTION = "Structure Utility.Description",
 		FORM_ACTIVE_VERSION = "Structure Utility.Active Version",
@@ -167,8 +162,8 @@ public class ResourceUtility extends ServiceProvider {
 	}
 
 	public Map<String, String> getFormFieldNamesAndLabels(String formName) throws tcAPIException,
-																	 tcFormNotFoundException,
-																	 tcColumnNotFoundException{
+																				  tcFormNotFoundException,
+																				  tcColumnNotFoundException {
 		HashMap<String, String> res = new HashMap<>();
 		long formKey = getFormKey(formName);
 		tcResultSet rs = formService.getFormVersions(formKey);
@@ -185,10 +180,10 @@ public class ResourceUtility extends ServiceProvider {
 		}
 		return res;
 	}
-	
+
 	public Map<String, Long> getFormFieldNamesAndKeys(String formName) throws tcAPIException,
-																	 tcFormNotFoundException,
-																	 tcColumnNotFoundException{
+																			  tcFormNotFoundException,
+																			  tcColumnNotFoundException {
 		HashMap<String, Long> res = new HashMap<>();
 		long formKey = getFormKey(formName);
 		tcResultSet rs = formService.getFormVersions(formKey);
@@ -205,10 +200,10 @@ public class ResourceUtility extends ServiceProvider {
 		}
 		return res;
 	}
-	
+
 	public Map<String, Long> getFormFieldOrders(String formName) throws tcAPIException,
-																	 tcFormNotFoundException,
-																	 tcColumnNotFoundException{
+																		tcFormNotFoundException,
+																		tcColumnNotFoundException {
 		HashMap<String, Long> orders = new HashMap<>();
 		long formKey = getFormKey(formName);
 		tcResultSet rs = formService.getFormVersions(formKey);
@@ -225,21 +220,21 @@ public class ResourceUtility extends ServiceProvider {
 		}
 		return orders;
 	}
-	
+
 	public <T> LinkedHashMap<String, T> getFormFieldsOrdered(String formName, Map<String, T> fieldNameValues) throws tcAPIException,
-																	 tcFormNotFoundException,
-																	 tcColumnNotFoundException{
+																													 tcFormNotFoundException,
+																													 tcColumnNotFoundException {
 		LinkedHashMap<String, T> result = new LinkedHashMap<>();
 		final Map<String, Long> orders = getFormFieldOrders(formName);
 		ArrayList<String> names = new ArrayList<>(fieldNameValues.keySet());
 		Collections.sort(names, new Comparator<String>() {
-			@Override
-			public int compare(String t0, String t1) {
-				Long l0 = orders.get(t0), l1 = orders.get(t1);
-				return Long.compare(l0 == null?Long.MAX_VALUE:l0, l1 == null?Long.MAX_VALUE:l1);
-			}
-		});
-		for(String name : names){
+						 @Override
+						 public int compare(String t0, String t1) {
+							 Long l0 = orders.get(t0), l1 = orders.get(t1);
+							 return Long.compare(l0 == null ? Long.MAX_VALUE : l0, l1 == null ? Long.MAX_VALUE : l1);
+						 }
+					 });
+		for (String name : names) {
 			result.put(name, fieldNameValues.get(name));
 		}
 		return result;
@@ -253,8 +248,8 @@ public class ResourceUtility extends ServiceProvider {
 	}
 
 	public Map<String, Pair<String, String>> getFormFieldNamesAndTypes(String formName) throws tcAPIException,
-																					 tcFormNotFoundException,
-																					 tcColumnNotFoundException {
+																							   tcFormNotFoundException,
+																							   tcColumnNotFoundException {
 		HashMap<String, Pair<String, String>> res = new HashMap<>();
 		long formKey = getFormKey(formName);
 		tcResultSet rs = formService.getFormVersions(formKey);
@@ -352,6 +347,72 @@ public class ResourceUtility extends ServiceProvider {
 			}
 		}
 		return sb.toString();
+	}
+
+	public Entitlement findOrCreateEntitlement(String appInstanceName, String lkName, String lkCode, String lkDecode, String formName,
+											   String formFieldName)
+		throws GenericEntitlementServiceException,
+			   tcAPIException,
+			   tcInvalidLookupException,
+			   tcColumnNotFoundException,
+			   ApplicationInstanceNotFoundException,
+			   GenericAppInstanceServiceException,
+			   tcFormNotFoundException,
+			   ITResourceNotFoundException,
+			   ObjectNotFoundException,
+			   DuplicateEntitlementException,
+			   FormFieldNotFoundException,
+			   LookupValueNotFoundException,
+			   FormNotFoundException {
+		EntitlementService entService = Platform.getService(EntitlementService.class);
+		SearchCriteria entCriteria = new SearchCriteria(ProvisioningConstants.EntitlementInstanceSearchAttribute.ENTITLEMENT_CODE.getId(),
+														lkCode,
+														SearchCriteria.Operator.EQUAL);
+		List<Entitlement> ents = entService.findEntitlements(entCriteria, new HashMap<String, Object>());
+		Entitlement result;
+		if (Misc.isNullOrEmpty(ents)) {
+			long lookupValueKey = -1;
+			Pair<String, String> lkPair = new Pair<>(lkCode, lkDecode);
+			try (LookupUtility lku = new LookupUtility()) {
+				HashMap<Long, Pair<String, String>> lookupWithKeys = lku.getLookupWithKeys(lkName);
+
+				for (Entry<Long, Pair<String, String>> e : lookupWithKeys.entrySet()) {
+					if (lkPair.equals(e.getValue())) {
+						lookupValueKey = e.getKey();
+						break;
+					}
+				}
+			}
+			if (lookupValueKey == -1) {
+				throw new IllegalArgumentException("Lookup value key for pair " + lkPair + " not found");
+			}
+			ApplicationInstanceService aiService = Platform.getService(ApplicationInstanceService.class);
+			ApplicationInstance appInstance = aiService.findApplicationInstanceByName(appInstanceName);
+			if (appInstance == null) {
+				throw new IllegalArgumentException("Application instance " + appInstanceName + " not found");
+			}
+			long formKey = getFormKey(formName), formFieldKey = getFormFieldNamesAndKeys(formName).get(formFieldName);
+			Entitlement ent = new Entitlement();
+			ent.setEntitlementCode(lkCode);
+			ent.setEntitlementValue(lkDecode);
+			ent.setDisplayName(lkDecode.replaceFirst(appInstance.getItResourceName() + '~', ""));
+			ent.setItResourceKey(appInstance.getItResourceKey());
+			ent.setObjectKey(appInstance.getObjectKey());
+			ent.setAppInstance(appInstance);
+			if (formFieldKey == -1) {
+				throw new IllegalArgumentException("Unable to find field key for name " + formFieldName + " form " + formName);
+			}
+			ent.setFormKey(formKey);
+			ent.setFormFieldKey(formFieldKey);
+			ent.setLookupValueKey(lookupValueKey);
+			ent.setValid(Boolean.TRUE);
+			result = entService.addEntitlement(ent);
+			LOG.log(Level.INFO, "Created new entitlement {0}", result);
+		} else {
+			result = ents.get(0);
+			LOG.log(Level.INFO, "Found entitlement {0}", result);
+		}
+		return result;
 	}
 
 	public Account getAccountByProcessInstanceKey(long userId, long processInstanceKey) {
@@ -571,7 +632,7 @@ public class ResourceUtility extends ServiceProvider {
 		beneficiaries.add(beneficiary);
 		requestData.setBeneficiaries(beneficiaries);
 
-		OperationResult operationResult = oimService.doOperation(requestData,
+		oracle.iam.vo.OperationResult operationResult = oimService.doOperation(requestData,
 																 OIMService.Intent.REQUEST);
 		if (operationResult == null) {
 			return null;
@@ -610,7 +671,7 @@ public class ResourceUtility extends ServiceProvider {
 		beneficiaries.add(beneficiary);
 		requestData.setBeneficiaries(beneficiaries);
 
-		OperationResult operationResult = oimService.doOperation(requestData,
+		oracle.iam.vo.OperationResult operationResult = oimService.doOperation(requestData,
 																 OIMService.Intent.REQUEST);
 
 		if (operationResult == null) {
