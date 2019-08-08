@@ -74,6 +74,17 @@ public class ITResourceUtility extends ServiceProvider<tcITResourceInstanceOpera
 		its.goToRow(0);
 		return its.getLongValue(IT_KEY_IN_OIM);
 	}
+	
+	public String getITResourceName(long key) throws tcAPIException, tcColumnNotFoundException {
+		HashMap<String, Object> hm = new HashMap<>();
+		hm.put(IT_KEY_IN_OIM, key);
+		tcResultSet its = service.findITResourceInstances(hm);
+		if (Misc.isNullOrEmpty(its)) {
+			throw new IllegalArgumentException("IT Resource with key " + key + " not exist");
+		}
+		its.goToRow(0);
+		return its.getStringValue(IT_NAME_IN_OIM);
+	}
 
 	@Override
 	protected Class<? extends tcITResourceInstanceOperationsIntf> getServiceClass() {
