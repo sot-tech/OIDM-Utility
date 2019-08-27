@@ -132,7 +132,7 @@ public final class Misc {
 		File file = new File(propertyFile);
 		URL[] urls = {parent.toURI().toURL()};
 		ClassLoader loader = new URLClassLoader(urls);
-		return ResourceBundle.getBundle(file.getName().replace(".properties", ""), Locale.getDefault(), loader);
+		return ResourceBundle.getBundle(file.getName().replaceAll("(\\.properties)$", ""), Locale.getDefault(), loader);
 	}
 	
 	public static boolean toBoolean(String str){
